@@ -1,0 +1,51 @@
+# Use the following data for this assignment:
+
+import pandas as pd
+import numpy as np
+from scipy import stats
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcol
+import matplotlib.cm as cm
+
+np.random.seed(12345)
+
+df = pd.DataFrame([np.random.normal(32000,200000,3650), 
+                   np.random.normal(43000,100000,3650), 
+                   np.random.normal(43500,140000,3650), 
+                   np.random.normal(48000,70000,3650)], 
+                  index=[1992,1993,1994,1995])
+
+#Average 
+avg = df.mean(axis = 1)
+#Deviation
+std = df.std(axis = 1)
+#Yerr accord to Ferreira et al
+yerr = std / np.sqrt(df.shape[1]) * stats.t.ppf(1-0.05/2, df.shape[1]-1)
+threshold=42000
+
+plt.figure()
+plt.axhline(y = threshold, color = 'grey', alpha = 0.5)
+
+bars = plt.bar(range(df.shape[0]), avg, yerr = yerr, color = 'lightslategrey')
+
+cm1 = mcol.LinearSegmentedColormap.from_list("Cmap",["b", "white", "darkred"])
+cmap = cm.ScalarMappable(cmap=cm1)
+cmap.set_array([])
+
+percentages = []
+for bar, yerr_ in zip(bars, yerr):
+    low = bar.get_height() - yerr_
+    high = bar.get_height() + yerr_
+    percentage = (high-threshold)/(high-low)
+    if percentage>1: percentage = 1
+    if percentage<0: percentage=0
+    percentages.append(percentage)
+percentages
+
+cmap.to_rgba(percentages)
+
+bars = plt.bar(range(df.shape[0]), avg, yerr = yerr, color = cmap.to_rgba(percentages))
+plt.colorbar(cmap, orientation='horizontal')
+
+plt.xticks(range(df.shape[0]), df.index, alpha = 0.8)
+plt.show()
